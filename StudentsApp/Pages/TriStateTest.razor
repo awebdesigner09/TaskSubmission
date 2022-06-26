@@ -1,0 +1,32 @@
+﻿@page "/TriStateTest"
+<PageTitle>TriStateTest</PageTitle>
+<h3>TriStateTest</h3>
+
+Current value of the Control is:<b> @(TriValue==null ? "NULL":TriValue) </b>
+<br />
+<br />
+<select @onchange="(eventArgs) => OnValueChanged(eventArgs) ">
+    <option value="" selected>-Select-</option>
+    <option value="Yes">Yes</option>
+    <option value="No">No</option>
+</select>
+
+@code {
+    private bool? TriValue{ get; set; }
+    private void OnValueChanged(ChangeEventArgs eventArgs)
+    {
+        switch (eventArgs.Value)
+        {
+            case "Yes":
+                TriValue = true;
+                break;
+            case "No":
+                TriValue = false;
+                break;
+            default:
+                TriValue = null;
+                break;
+        }
+    }
+
+}

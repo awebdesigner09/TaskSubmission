@@ -1,0 +1,95 @@
+﻿@using StudentsApp.Data
+@using StudentsApp.Services
+@using System.Text.Json
+@inject Services.IModalService ModalService
+@inject IHttpClientFactory ClientFactory
+@if(Details == null)
+{
+    <span>Loading..</span>
+}
+else
+{
+<div class="container-fluid p-4">
+    <div class="row">
+        <div class="col fw-bold">Roll number:</div>
+        <div class="col">@Details.RollNumber</div>
+    </div>
+    <div class="row">
+         <div class="col fw-bold">Class:</div>
+        <div class="col">@Details.Class.Name</div>
+    </div>
+    <div class="row pt-4">
+        <div class="col fw-bold">Name:</div>
+        <div class="col">@Details.FirstName&nbsp;@Details.LastName</div>
+    </div>
+    <div class="row">
+        <div class="col fw-bold">DOB:</div>
+        <div class="col">@Details.BirthDate.ToShortDateString()</div>
+    </div>
+    <div class="row">
+        <div class="col fw-bold">Blood group:</div>
+        <div class="col">@Details.BloodGroup</div>
+    </div>
+    <div class="row pt-4">
+        <div class="col fw-bold">Mother name:</div>
+        <div class="col">@Details.MotherName</div>
+    </div>
+    <div class="row">
+        <div class="col fw-bold">Father name:</div>
+        <div class="col">@Details.FatherName</div>
+    </div>
+    <div class="row">
+        <div class="col fw-bold">Phone:</div>
+        <div class="col">@Details.Phone</div>
+    </div>
+    <div class="row">
+        <div class="col fw-bold">Email:</div>
+        <div class="col">@Details.Email</div>
+    </div>
+    <div class="row">
+        <div class="col fw-bold">Address:</div>
+        <div class="col">@Details.Address</div>
+    </div>
+    
+</div>
+}
+@code{
+    [CascadingParameter] ModalParameters Parameters{ get; set; }
+    [CascadingParameter] BlazoredModal BlazoredModal { get; set; }
+
+    int StudentId{ get; set; }
+    StudentDetails Details { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        StudentId = Parameters.Get<int>("StudentId");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"https://localhost:7261/api/student/{StudentId}");
+        var client = ClientFactory.CreateClient();
+        var response = await client.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await using var responseStream = await response.Content.ReadAsStreamAsync();
+            var options = new JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+            Details = await JsonSerializer.DeserializeAsync<StudentDetails>(responseStream,options);
+        }
+        else
+        {
+            Details = null;
+        }
+
+        BlazoredModal.SetTitle("Student Details");
+    }
+    
+    void Done()
+    {
+        ModalService.Close(ModalResult.Ok("Form Submitted"));
+    }
+    void Cancel()
+    {
+        ModalService.Close(ModalResult.Cancel());
+    }
+}

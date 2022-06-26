@@ -1,0 +1,100 @@
+﻿@using StudentsApp.Data
+@using StudentsApp.Services
+@using System.Text.Json
+@inject Services.IModalService ModalService
+@inject IHttpClientFactory ClientFactory
+@if(StudentScores == null)
+{
+    <span>Loading..</span>
+}
+else if(StudentScores.Count == 0)
+{
+    <span>No Scores found.</span>
+}
+else
+{
+<div class="container-fluid">
+    <div class="row">
+        <div class="col fw-bold">RollNumber:</div>
+        <div class="col">@RollNumber</div>
+       
+    </div>
+    <div class="row">
+         <div class="col fw-bold">Name:</div>
+        <div class="col">@FirstName&nbsp;@LastName</div>
+        
+    </div>
+    <div class="row">
+        <div class="col fw-bold">Class:</div>
+        <div class="col">@Class</div>
+    </div>
+   
+    
+    <div class="row pt-4">
+    <table class="table table-striped">
+        <tbody>
+            <tr>
+                  <th scope="row">Subject</th>
+                  @foreach(var Score in StudentScores){
+                    <td>@Score.Subject.Name</td>
+                  }
+            </tr>
+            <tr>
+                <th scope="row">Marks</th>
+                @foreach(var Score in StudentScores){
+                    <td>
+                        @Score.Marks
+                    </td>
+                 }
+            </tr>
+        </tbody>
+    </table>
+    </div>
+   
+</div>
+}
+@code{
+    [CascadingParameter] ModalParameters Parameters{ get; set; }
+    [CascadingParameter] BlazoredModal BlazoredModal { get; set; }
+
+    int StudentId{ get; set; }
+    string FirstName { get; set; }
+    string LastName { get; set; }
+    string RollNumber{ get; set; }
+    string Class { get; set; }
+    List<StudentScore> StudentScores { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        StudentId = Parameters.Get<int>("StudentId");
+        FirstName = Parameters.Get<string>("FirstName");
+        LastName = Parameters.Get<string>("LastName");
+        RollNumber = Parameters.Get<string>("RollNumber");
+        Class = Parameters.Get<string>("Class");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"https://localhost:7261/api/score/{StudentId}");
+        var client = ClientFactory.CreateClient();
+        var response = await client.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await using var responseStream = await response.Content.ReadAsStreamAsync();
+            var options = new JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+            StudentScores = await JsonSerializer.DeserializeAsync<List<StudentScore>>(responseStream,options);
+        }
+        else
+        {
+            StudentScores = null;
+        }
+
+        BlazoredModal.SetTitle("Student Score");
+    }
+   
+    void Cancel()
+    {
+        ModalService.Close(ModalResult.Cancel());
+    }
+}

@@ -1,0 +1,109 @@
+﻿@page "/Students"
+@inject StudentsApp.Services.IModalService Modal
+@using System.Text.Json
+@using StudentsApp.Components
+@using StudentsApp.Data
+@using StudentsApp.Services
+@inject IHttpClientFactory ClientFactory
+
+<h3>Students</h3>
+<PageTitle>Students</PageTitle>
+@if(students.Count == 0)
+{
+    <span>Loading..</span>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>RollNumber</th>
+                <th>Class</th>
+                <th>Name</th>
+                <th>Surname</th>
+                <th></th>
+                <th></th>
+
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var student in students)
+            {
+                <tr>
+                    <td>@student.RollNumber</td>
+                    <td>@student.Class</td>
+                    <td>@student.FirstName</td>
+                    <td>@student.LastName</td>
+                    <td>
+                        <button class="btn" @onclick="() => ShowDetails(student.Id)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-card-list" viewBox="0 0 16 16">
+                              <path d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h13zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13z"/>
+                              <path d="M5 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 5 8zm0-2.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm0 5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-1-5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0zM4 8a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0zm0 2.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/>
+                            </svg>
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn" @onclick="() => ShowScores(student.Id,student.FirstName,student.LastName,student.RollNumber,student.Class)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-trophy" viewBox="0 0 16 16">
+                              <path d="M2.5.5A.5.5 0 0 1 3 0h10a.5.5 0 0 1 .5.5c0 .538-.012 1.05-.034 1.536a3 3 0 1 1-1.133 5.89c-.79 1.865-1.878 2.777-2.833 3.011v2.173l1.425.356c.194.048.377.135.537.255L13.3 15.1a.5.5 0 0 1-.3.9H3a.5.5 0 0 1-.3-.9l1.838-1.379c.16-.12.343-.207.537-.255L6.5 13.11v-2.173c-.955-.234-2.043-1.146-2.833-3.012a3 3 0 1 1-1.132-5.89A33.076 33.076 0 0 1 2.5.5zm.099 2.54a2 2 0 0 0 .72 3.935c-.333-1.05-.588-2.346-.72-3.935zm10.083 3.935a2 2 0 0 0 .72-3.935c-.133 1.59-.388 2.885-.72 3.935zM3.504 1c.007.517.026 1.006.056 1.469.13 2.028.457 3.546.87 4.667C5.294 9.48 6.484 10 7 10a.5.5 0 0 1 .5.5v2.61a1 1 0 0 1-.757.97l-1.426.356a.5.5 0 0 0-.179.085L4.5 15h7l-.638-.479a.501.501 0 0 0-.18-.085l-1.425-.356a1 1 0 0 1-.757-.97V10.5A.5.5 0 0 1 9 10c.516 0 1.706-.52 2.57-2.864.413-1.12.74-2.64.87-4.667.03-.463.049-.952.056-1.469H3.504z"/>
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Student> students=new List<Student>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "https://localhost:7261/api/student");
+        var client = ClientFactory.CreateClient();
+        var response = await client.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await using var responseStream = await response.Content.ReadAsStreamAsync();
+            var options = new JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+            students = await JsonSerializer.DeserializeAsync<List<Student>>(responseStream,options);
+        }
+    }
+    void ShowDetails(int id)
+    {
+        var parameters = new ModalParameters();
+        parameters.Add("StudentId", id);
+
+        Modal.OnClose += ModalClosed;
+        Modal.Show<StudentDetailsComponent>("Student Details", parameters);
+    }
+    void ShowScores(int id,string fName,string? lName,string? rollNumber,string className)
+    {
+        var parameters = new ModalParameters();
+        parameters.Add("StudentId", id);
+        parameters.Add("FirstName", fName);
+        parameters.Add("LastName", lName == null ? "":lName);
+        parameters.Add("RollNumber", rollNumber==null ? "": rollNumber);
+        parameters.Add("Class", className);
+
+        Modal.OnClose += ModalClosed;
+        Modal.Show<StudentScoresComponent>("Student Scores", parameters);
+    }
+    void ModalClosed(ModalResult modalResult)
+    {
+        if (modalResult.Cancelled)
+        {
+            Console.WriteLine("Modal Cancelled");
+        }
+        else
+        {
+            Console.WriteLine(modalResult.Data.ToString());
+        }
+        Modal.OnClose -= ModalClosed;
+    }
+}
