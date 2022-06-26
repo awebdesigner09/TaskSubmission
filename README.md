@@ -2,7 +2,7 @@
 
 This Solution has 2 projects: **StudentsAPI** and **Student(Blazor)**
 
-#### Developed on
+### Developed using
 - VS 2022
 - SQLServer Express
 - .NET 6
@@ -11,6 +11,8 @@ This Solution has 2 projects: **StudentsAPI** and **Student(Blazor)**
 ### StudentsAPI
 + Connection string can be found appsettings.json file of API project.
 + DB context configured to seed data on DB creation.
++ To setup database, please update DB server name.
++ Run **update-database** command from Package manager console. This setup database and seeds it with data.
 
 ### StudentsApp
 + **TriStateTest** page to show: bool? backed control.
